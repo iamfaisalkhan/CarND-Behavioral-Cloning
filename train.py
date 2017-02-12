@@ -5,75 +5,98 @@ import pandas as pd
 import numpy as np
 import cv2
 
+from keras.models import load_model
+
+import argparse
+
 from model import *
-
-path = "./data"
-
-def brightness(X, range=0.25):
-    tmp = cv2.cvtColor(X, cv2.COLOR_RGB2HSV)
-    tmp[:, :, 2] = tmp[:, :, 2] + (range + np.random.uniform())
-    return cv2.cvtColor(tmp, cv2.COLOR_HSV2RGB)
-
-def translate(X, y, x_range, y_range):
-    trX = x_range * np.random.uniform() - x_range/2
-    trY = y_range * np.random.uniform() - y_range/2
-    
-    transMat = np.float32([[1, 0, trX], [0, 1, trY]])
-    X = cv2.warpAffine(X, transMat, (X.shape[1], X.shape[0]))    
-    
-    # Translate the steering angle by 0.004 per pixel
-    y = y + ( (trX/x_range) * 2 ) *.2
-    
-    return X, y
-
-def preProcessImage(X, resize=0):
-    # Equalize brightness through histogram equlization
-    X = brightness(X)
-        
-    X = X[60:135, :, :]
-
-    return X
-
-def prepare(X, y):
-    X = preProcessImage(X)
-
-    # Translate image to horizontal and vertical direction
-    X, y = translate(X, y, 100, 40)
-
-    # With a random probability miror the image from left to right, 
-    mirror = np.random.randint(2)
-    if mirror == 1:
-        X = np.fliplr(X)
-        y = y * - 1.0
-    
-    return X, y
-
-
-
+from generator import training_generator
+from generator import validation_generator
+from config import conf
 
 if __name__ == "__main__":
-    row = 160
-    col = 320
-    ch = 3
 
-    data = pd.read_csv("%s/driving_log.csv"%path)
+    parser = argparse.ArgumentParser(description='Behavior Clonning')
 
-    model = getModel_nvidia_original()
+    parser.add_argument(
+        '--epochs',
+        dest="epochs",
+        type=int,
+        nargs='?',
+        default=10,
+        help='Number of training iterations or epochs'
+    )
+    parser.add_argument(
+        '--model',
+        dest="model",
+        type=str,
+        nargs='?',
+        default='nvidia1',
+        help='Number of training iterations or epochs'
+    )
+    parser.add_argument(
+        '--init',
+        dest="model_init",
+        type=str,
+        nargs='?',
+        default=None,
+        help='Initialize the model with weights from the file.'
+    )
+    parser.add_argument(
+        'image_folder',
+        type=str,
+        nargs='?',
+        default='./data',
+        help='Path to image folder.'
+    )
+    parser.add_argument(
+        'model_dir',
+        type=str,
+        nargs='?',
+        default='/data',
+        help='Path to image folder. This is where the trained model will be saved.'
+    )
+
+    args = parser.parse_args()
+    
+    conf.epochs = args.epochs
+    conf.data_folder = args.image_folder
+    conf.epochs = args.epochs
+    conf.model_dir = args.model_dir
+    conf.model = args.model
+
+    data = pd.read_csv("%s/driving_log.csv"%conf.data_folder)
+    mask = np.random.rand(data.shape[0]) < 0.9
+    train = data[mask] 
+    valid = data[~mask]
+
+    if conf.model == "nvidia1":
+        model = model_nivida1()
+    else:
+        print("Model not defined")
+        exit()
+    
+    if args.model_init != None and os.path.exists(args.model_init):
+        model = load_model(args.model_init)
+
     cnt = 0
-    for i in range(EPOCHS):
+    for i in range(conf.epochs):
         bias = 1. / (cnt + 1.)
     
-        print (bias)
         history = model.fit_generator(
-                        training_generator(data, bias, 128), 
-                        samples_per_epoch=20000, 
-                        validation_data=validation_generator(testing_files, testing_angles, 128),
+                        training_generator(train, bias, 128), 
+                        samples_per_epoch=25600, 
+                        validation_data=validation_generator(valid, 128),
                         nb_val_samples=1000,
-                        nb_epoch=1, 
-                        verbose=2)
+                        nb_epoch=1)
         cnt +=1
     
-    model.save("steering_model_nvidia.h5")
-    print ("Model saved")
 
+    output_path = "%s/%s"%(conf.model_dir, conf.model)
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+
+    model.save("%s/model.h5"%(output_path))
+
+    print ("Model saved")
     
