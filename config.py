@@ -3,7 +3,7 @@ class Config:
     epochs = 3
 
     # Original image width / height
-    w = 300
+    w = 320
     h = 160
 
     row  = 66
@@ -17,9 +17,13 @@ class Config:
     model = "nvidia_original"
 
     samples_per_epoch = 20224
-    batch_size = 256
+    batch_size = 512
 
     bias = 1.0
+
+    # Camera angle offset
+    left_offset = 0.2
+    right_offset = -0.2
     
 conf = Config()
 

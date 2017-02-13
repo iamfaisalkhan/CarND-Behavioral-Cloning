@@ -20,7 +20,7 @@ def training_generator(data, angle_bias=1.0, batch_size=128):
             ci = np.random.randint(3)
 
             file = os.path.join(data_folder, data[camera[ci]].iloc[index].strip())
-            shift = [0.0, 0.25, -0.25] #shift angle for center, left, and right camera
+            shift = [0.0, conf.left_offset, conf.right_offset] #shift angle for center, left, and right camera
             
             image = cv2.imread(file)
 

@@ -82,9 +82,9 @@ if __name__ == "__main__":
     conf.batch_size = args.batch_size
 
     data = pd.read_csv("%s/driving_log.csv"%conf.data_folder)
-    #mask = np.random.rand(data.shape[0]) < 0.9
-    #train = data[mask] 
-    #valid = data[~mask]
+    # mask = np.random.rand(data.shape[0]) < 0.9
+    # train = data[mask] 
+    # valid = data[~mask]
 
     # Pick model
     if conf.model == "nvidia1":
@@ -95,8 +95,12 @@ if __name__ == "__main__":
         model = model_nivida2b()
     elif conf.model == 'nvidia3':
         model = model_nvidia3()
-    elif conf.model == 'nvidia_relu':
+    elif conf.model == 'nvidia_relu':        
         model = model_nvidia_relu()
+    elif conf.model == 'nvidia_relu_dropout':
+        model = model_nvidia_relu_dropout()
+    elif conf.model == 'nvidia_elu':
+        model = model_nvidia_elu()
     elif conf.model == 'comma_elu':
         model = model_comma_elu()
     elif conf.model == 'comma_relu':

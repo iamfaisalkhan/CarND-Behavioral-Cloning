@@ -1,7 +1,31 @@
+import os
 import cv2
 import numpy as np
 
+from skimage.exposure import rescale_intensity
+
 from config import conf
+
+def gray_diff_images(data):
+    rows = data.shape[0]
+    X = np.zeros((rows - 6, conf.h, conf.w, 4), dtype=np.uint8)
+    for i in range(4+2,  rows):
+        for j in range(4):
+            file = os.path.join(conf.data_folder, data['center'].iloc[i - j - 1])
+            img1 = cv2.imread(file)
+            file = os.path.join(conf.data_folder, data['center'].iloc[i - j - 1])
+            img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2HSV)
+            img2 = cv2.imread(data['center'].iloc[i - j])
+            img2 = cv2.cvtColor(img1, cv2.COLOR_BGR2HSV)
+            img = img2[:, :, 2] - img1[:, :, 2]
+            img = rescale_intensity(img, in_range=(-255, 255), out_range=(0, 255))
+
+            img = np.array(img, dtype=np.uint8)
+            X[i - 6, :, :, j] = img
+
+    return X, np.array(data["steering"].iloc[6:])
+
+    pass
 
 
 def brightness(X, val=0.25):
@@ -41,12 +65,12 @@ def roi(X):
 
 def prepareTrain(X, y):
     X = brightness(X)
-    
-    # X, y = rotate(X, y, 5)
-    # # Translate image to horizontal and vertical direction
-    X, y = translate(X, y, 50, 40)
 
     X = roi(X)
+
+    # X, y = rotate(X, y, 5)
+    # # Translate image to horizontal and vertical direction
+    X, y = translate(X, y, 100, 40)
 
 
     # # With a random probability miror the image from left to right, 
