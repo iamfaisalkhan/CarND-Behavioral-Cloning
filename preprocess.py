@@ -3,9 +3,12 @@ import numpy as np
 
 from config import conf
 
-def brightness(X, range=0.25):
+
+def brightness(X, val=0.25):
     tmp = cv2.cvtColor(X, cv2.COLOR_BGR2HSV)
-    tmp[:, :, 2] = tmp[:, :, 2] + (range + np.random.uniform())
+    bgt = val + np.random.uniform()
+    tmp[:, :, 2] = tmp[:, :, 2] * bgt
+
     return cv2.cvtColor(tmp, cv2.COLOR_HSV2RGB)
 
 def translate(X, y, x_range, y_range):
@@ -20,6 +23,14 @@ def translate(X, y, x_range, y_range):
     
     return X, y
 
+def rotate(X, y, rot_angle):
+    ang_rot = np.random.uniform(rot_angle)-rot_angle/2
+    rows,cols,_ = X.shape    
+    rot_M = cv2.getRotationMatrix2D((cols/2,rows/2), rot_angle, 1)
+    X = cv2.warpAffine(X, rot_M,( cols,rows) )
+
+    return X, y
+
 def roi(X):
     top = conf.roi[0][0]
     bottom = conf.roi[0][1]
@@ -31,10 +42,12 @@ def roi(X):
 def prepareTrain(X, y):
     X = brightness(X)
     
+    # X, y = rotate(X, y, 5)
+    # # Translate image to horizontal and vertical direction
+    X, y = translate(X, y, 50, 40)
+
     X = roi(X)
 
-    # # Translate image to horizontal and vertical direction
-    X, y = translate(X, y, 100, 40)
 
     # # With a random probability miror the image from left to right, 
     mirror = np.random.randint(2)
@@ -42,17 +55,17 @@ def prepareTrain(X, y):
         X = cv2.flip(X, 1)
         y = y * - 1.0
     
-    X = cv2.resize(X, (conf.row, conf.col), cv2.INTER_AREA)
+    X = cv2.resize(X, (conf.col, conf.row), cv2.INTER_AREA)
 
     return X, y
 
-def prepareTest(X, y):
-    #X = roi(X)
+def prepareTest(X):
 
-    #X = cv2.resize(X, (conf.row, conf.col), cv2.INTER_AREA)
+    X = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
 
-    #X = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
+    X = roi(X)
 
-    return X, y
+    X = cv2.resize(X, (conf.col, conf.row), cv2.INTER_AREA)
 
+    return X
 
