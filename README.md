@@ -1,6 +1,6 @@
 #**Behavioral Cloning** 
 
-The  main aim of the behavioral clonning project was to train a convolution neural network to mimic human driving behavior using the open source [Udacity Car Simulator] (https://github.com/udacity/self-driving-car-sim). This document explains our approach to the problem along with the explanation of the training data and final model. 
+The  main aim of the behavioral cloning project was to train a convolution neural network to mimic human driving behavior using the open source [Udacity Car Simulator] (https://github.com/udacity/self-driving-car-sim). This document explains our approach to the problem along with the explanation of the training data and final model. 
 
 [//]: # (Image References)
 
@@ -18,7 +18,7 @@ The  main aim of the behavioral clonning project was to train a convolution neur
 The project is written in python and organized in following files.
 
 * **model.py** is the main entry point that creates and trains the model.
-* **cnn_models.py** comprises of different models that we experimented for building the clonning behavior.  The final model is the fuction *model_nvidia_relu_dropout*.
+* **cnn_models.py** comprises of different models that we experimented for building the cloning behavior.  The final model is the fuction *model_nvidia_relu_dropout*.
 * **generator.py** has code for generating training and validation data for this project. 
 * **preprocess.py** has utility functions for augmenting data. 
 * **drive.py** is from the simulator for driving the car in autonomous mode
@@ -31,7 +31,7 @@ In order to train the model using the final network used in this project run the
 python model.py
 ```
 
-The above command expects to have a data folder under the current directory containg the **IMG** directory and a csv file for steering commands: **driving_log.csv** file. Most of these options are configurable as command line option.
+The above command expects to have a data folder under the current directory contains the **IMG** directory and a csv file for steering commands: **driving_log.csv** file. Most of these options are configurable as command line option.
 
 ```sh
 python model.py -h
@@ -40,7 +40,7 @@ usage: model.py [-h] [--epochs [EPOCHS]] [--model [MODEL]]
                 [--init [MODEL_INIT]] [--batch_size [BATCH_SIZE]]
                 [--image_folder [IMAGE_FOLDER]] [--model_dir [MODEL_DIR]]
 
-Behavior Clonning
+Behavior Cloning
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -68,17 +68,17 @@ python train model.h5
 
 The rest of this document explains different part of the projects in some detail. In this section, we go over some high level design decision made to come up with the solution of this problem. 
 
-Our approach  involved experimenting with lot of different models and tunning various parameters. In order to facilitate this, we organized the code in such a way to facilitate experimenting with multiple models and different parameters.  The **cnn_models.py** shows a variation of models mostly the variation on comm.ai or nvidia model with different type of activation, dropout probabilities and normalization layers. 
+Our approach  involved experimenting with lot of different models and tunning various parameters. In order to facilitate this, we organized the code in such a way to facilitate experimenting with multiple models and different parameters.  The **cnn_models.py** shows a variation of models mostly the variation on comm.ai or Nvidias model with different type of activation, dropout probabilities and normalization layers. 
 
 While training, the output from each epoch was saved. We usually tested the model with lowest validation loss from each model. Testing the model only on Track 1, gave us an idea on how the model is lacking e.g. if it is doing hard right or left turn than adjusting the X and Y translation range values or left/right camera steering offset helped  the next iteration. 
 
-#### Overfitting
+#### Over-fitting
 
-We tried to avoid overfitting of the model by:
+We tried to avoid over-fitting of the model by:
 
 * Generating lot of augmentation of the input training data. 
-* Using a different data generator for training and validation data.  The validation generator only sample images from center camera without angle bias and withnot any further augmentation. 
-* We also experimented with training / testing split of the data but the final model uses all the data and rely on augmentation and dropout to avoid overfitting. The performance of the model on Track 2 (see video at the end) is some indicaiton of generalizatin. 
+* Using a different data generator for training and validation data.  The validation generator only sample images from center camera without angle bias and with out any further augmentation. 
+* We also experimented with training / testing split of the data but the final model uses all the data and rely on augmentation and dropout to avoid over fitting. The performance of the model on Track 2 (see video at the end) is some indicaiton of generalizatin. 
 
 #### Learning Rate
 
@@ -86,13 +86,13 @@ The adam optimizer was used for its adaptable learning rate.
 
 ### Visualization
 
-To begin understanding the data and how the preprocessing is working, used a lot of visulalization (See the two Ipythong notebook for some examples). 
+To begin understanding the data and how the preprocessing is working, used a lot of visualization (See the two Ipythong notebook for some examples). 
 
 ## Network Architecture
 
 We experimented with multiple models. Take a look at the cnn_models.py for a detailed list of models used during the experimentation.
 
-Our final model is based on a modified version of the Nvidia's End-to-End learning model. The original model did not use any regularization. However, we noticed that adding the dropout on this models can help to generalize the driving between the different (but similar) tracks including the one not seen by the model before. The input to the model is an image of 200 by 66 as used in the original Nvidia's model. Additionaly, we used a normalization layer to normalize the input images. Below is our model definition in Keras (**cnn_models.py:158-182**). The ReLU was used for non-linearity. The experimentation with other activation layers (ELU or LeakyELU)  didn't seem to work very well with this data and may require further investigation. 
+Our final model is based on a modified version of the Nvidia's End-to-End learning model. The original model did not use any regularization. However, we noticed that adding the dropout on this models can help to generalize the driving between the different (but similar) tracks including the one not seen by the model before. The input to the model is an image of 200 by 66 as used in the original Nvidia's model. Additionally, we used a normalization layer to normalize the input images. Below is our model definition in Keras (**cnn_models.py:158-182**). The ReLU was used for non-linearity. The experimentation with other activation layers (ELU or LeakyELU)  didn't seem to work very well with this data and may require further investigation. 
 
 ```python
 # cnn_models.py
@@ -125,13 +125,13 @@ def model_nvidia_relu_dropout():
 
 ## Training Data
 
-The model was trained using the Udacity's dataset. The dataset contains about 8K immages each of 3 camera positions (left, center, and right). The left and right camera images are useful for correcting the steering angle in case the car wanders off to the road edges. 
+The model was trained using the Udacity's dataset. The dataset contains about 8K images each of 3 camera positions (left, center, and right). The left and right camera images are useful for correcting the steering angle in case the car wanders off to the road edges. 
 
 Here is a random sample of images at different steering angle. 
 
 ![alt text][image1]
 
-To further investigate the data, we also look at the distribution of steering angle (see figures below) and found out that the data is heavily unblanced towarded the zero steering angle. This was  expected as our simulated car will be driving striaght. We handled this by using python **generator** that bias towards non-zero angles and over the iterations introduce zero-based steering angle images . The threshold for rejecting zero-angled images is adjusted at the beginning of each iteration. 
+To further investigate the data, we also look at the distribution of steering angle (see figures below) and found out that the data is heavily biased towards the zero steering angle. This was expected as our simulated car will be driving straight. We handled this by using python **generator** that bias towards non-zero angles and over the iterations introduce zero-based steering angle images . The threshold for rejecting zero-angled images is adjusted at the beginning of each iteration. 
 
 ```python
 
@@ -159,7 +159,7 @@ Images from both the right and the left camera were used during the training pha
 
 #### Random Brightness
 
-A random factor of brightness was added to each image using the HSV colorspace. This can potentially allow us to generalize beyond the seen data and handle shadows and lightning conditions in the tracks. 
+A random factor of brightness was added to each image using the HSV color space. This can potentially allow us to generalize beyond the seen data and handle shadows and lightning conditions in the tracks. 
 
 ```python
 brightness = 0.25 + np.random.uniform()
@@ -208,11 +208,11 @@ In addition to these augmentation, we experimented with few other techniques inc
 
 The final model was tested using the simulator at fastest graphics quality and 800x600 resolution. 
 
-**Track 1** | **Track 2**
+
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=bpGDu853EMg
 " target="_blank"><img src="http://img.youtube.com/vi/bpGDu853EMg/0.jpg" 
-alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=bpGDu853EMg
-" target="_blank"><img src="http://img.youtube.com/vi/bpGDu853EMg/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a> | <a href="http://www.youtube.com/watch?feature=player_embedded&v=CYzZkdP088I
+" target="_blank"><img src="http://img.youtube.com/vi/CYzZkdP088I/0.jpg" 
 alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
 
 ### Reflection
@@ -222,4 +222,3 @@ The project was  extremly fun and overall a great learning exercise. It also sho
 ### Acknowledgements
 
 The project wouldn't have been possible within this time frame if there wasn't for the community's help. I would like to thank the Vivek Yadav and Mohan Karthik for their excellent blog posts that saved me lot of pitfalls early in the project.
-
