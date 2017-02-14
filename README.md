@@ -165,3 +165,19 @@ For details about how I created the training data, see the next section.
 
 ####1. Solution Design Approach
 
+### Videos
+
+The result of the model on track number 1. 
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=bpGDu853EMg
+" target="_blank"><img src="http://img.youtube.com/vi/bpGDu853EMg/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
+
+The result of the model on track number 2. 
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=bpGDu853EMg
+" target="_blank"><img src="http://img.youtube.com/vi/bpGDu853EMg/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
+
+
+
