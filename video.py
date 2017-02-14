@@ -17,10 +17,10 @@ def main():
         help='FPS (Frames per second) setting for the video.')
     args = parser.parse_args()
 
-    video_file = args.image_folder + '.mp4'
+    video_file = 'out.mp4'
     print("Creating video {}, FPS={}".format(video_file, args.fps))
     clip = ImageSequenceClip(args.image_folder, fps=args.fps)
-    clip.write_videofile(video_file)
+    clip.write_videofile(video_file, codec='mpeg4')
 
 
 if __name__ == '__main__':

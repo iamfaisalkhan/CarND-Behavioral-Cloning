@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--image_folder',
         type=str,
-        dest='image_folder'
+        dest='image_folder',
         nargs='?',
         default=conf.data_folder,
         help='The path to the top level directory contain IMG folder. The top level directory should contain driving_log.csv file'

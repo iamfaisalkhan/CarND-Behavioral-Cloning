@@ -12,9 +12,9 @@ class Config:
     roi = ( (60, 140), (0, 320))
 
     data_folder = "./data"
-    model_dir = "./steering_angle/"
+    model_dir = "./"
 
-    model = "nvidia_original"
+    model = "nvidia_relu_dropout"
 
     samples_per_epoch = 20224
     batch_size = 512
