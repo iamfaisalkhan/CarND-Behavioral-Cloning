@@ -17,7 +17,7 @@ The goals / steps of this project are the following:
 [//]: # (Image References)
 
 [image1]: ./resources/sample_images.svg "random sample of images with varying angles"
-[image2]: ./resources/angle_distribution.svg "Steering ngle distribution"
+[image2]: ./resources/angle_distribution.png "Steering ngle distribution"
 [image3]: ./resources/translate_example.svg "Recovery Image"
 [image4]: ./resources/left_right_camera.svg "Recovery Image"
 [image5]: ./examples/placeholder_small.png "Recovery Image"
@@ -53,34 +53,36 @@ The model.py file contains the code for training and saving the convolution neur
 
 We experimented with multiple models. Take a look at the cnn_models.py for a detailed list of models used during the experimentation.
 
-Our final model is based on the Nvidia's End-to-End learning model. The original model doesn't use any regularization. However, we noticed that adding the dropout on these models can help to generalize the driving behavior between the different (but similar) simulated tracks even on the track not seen by the model before. 
+Our final model is based on a modified version of the Nvidia's End-to-End learning model. The original model did not use any regularization. However, we noticed that adding the dropout on this models can help to generalize the driving between the different (but similar) tracks including the one not seen by the model before. The input to the model is an image of 200 by 66 as used in the original Nvidia's model. We use a normalization layer to normalize the input images. Below is our model definition in Keras (**cnn_models.py:158-182**). The ReLU was used for non-linearity. The experimentation with other activation layers didn't seem to work very well with this model and require further investigation. 
 
 ```python
-     1	model = Sequential()
-     2	model.add(Lambda(lambda x: x/127.5 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-      	
-     3	model.add(Convolution2D(24, 5, 5, activation='relu', subsample=(2, 2), border_mode="valid"))
-     4	model.add(Convolution2D(36, 5, 5, activation='relu', subsample=(2, 2), border_mode="valid"))
-     5	model.add(Convolution2D(48, 5, 5, activation='relu', subsample=(2, 2), border_mode="valid"))
-     6	model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), border_mode="valid"))
-     7	model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), border_mode="valid"))
-     8	model.add(Flatten())
-     9	model.add(Activation('relu'))
-    10	model.add(Dense(100, init='he_normal'))
-    11	model.add(Activation('relu'))
-    12	model.add(Dense(50, init='he_normal'))
-    13	model.add(Activation('relu'))
-    14	model.add(Dense(10, init='he_normal'))
-    15	model.add(Activation('relu'))
-    16	model.add(Dense(1))
-      	
-    17	model.compile(optimizer="adam", loss="mse")
+# cnn_models.py
+def model_nvidia_relu_dropout():
+    model = Sequential()
+    model.add(Lambda(lambda x: x/127.5 - 1., input_shape = (conf.row, conf.col, conf.ch)))
+
+    model.add(Convolution2D(24, 5, 5, activation='relu', subsample=(2, 2), init='he_normal', border_mode="valid"))
+    model.add(Convolution2D(36, 5, 5, activation='relu',  subsample=(2, 2), init='he_normal', border_mode="valid"))
+    model.add(Convolution2D(48, 5, 5, activation='relu', subsample=(2, 2), init='he_normal', border_mode="valid"))
+    model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), init='he_normal', border_mode="valid"))
+    model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), init='he_normal',  border_mode="valid"))
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Activation('relu'))
+    model.add(Dense(100, init='he_normal'))
+    model.add(Dropout(0.2))
+    model.add(Activation('relu'))
+    model.add(Dense(50, init='he_normal'))
+    model.add(Dropout(0.2))
+    model.add(Activation('relu'))
+    model.add(Dense(10, init='he_normal'))
+    model.add(Activation('relu'))
+    model.add(Dense(1))
+
+    model.compile(optimizer="adam", loss="mse")
+
+    return model
 ```
-
-We followed the convolution neural network My model consists of a convolution neural network with 3x3 filter sizes and depths between 32 and 128 (model.py lines 18-24) 
-
-The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
-
 
 ## Training
 
@@ -92,17 +94,17 @@ Here is a random sample of images at different steering angle.
 
 ![alt text][image1]
 
-To further investigate the data, we also look at the distribution of steering angle (see figure below) andand quickly found out that the data is heavily unblanced towarded the zero steering angle. This was completely expected as our simulated car will be driving striaght. We handled this by using python **generator** that randomly picks images by first selecting images with only non-zero steering angles but later introducing zero-based steering angle in the sampled images. The threshold for rejecting most of the zero-angled images is adjusted at the beginning of each iteration. 
+To further investigate the data, we also look at the distribution of steering angle (see figure below) andand quickly found out that the data is heavily unblanced towarded the zero steering angle. This was completely expected as our simulated car will be driving striaght. We handled this by using python **generator** that randomly picks images by first selecting images with only non-zero steering angles but later introducing zero-based steering angle in the sampled images. The threshold for rejecting zero-angled images is adjusted at the beginning of each iteration. 
 
 ![alt text][image2]
 
 ### Augmentation
 
-To handle the limited dataset, data augmentation techniques were used to generate extra training examples that suits betst  augment it to generate extra training example and to allow our algorithm to learn a more general model from the limited We used data augmentation to generate extra training data to allow our model to handle variety of situations 
+We generate extra training examples by augmenting the existing one. Such augmentation allow the model to learn a more general representation from the training data. Here is a brief summary of all the augmentation used in building the final model. 
 
 #### Left and Right Camera
 
-Images from both the right and the left camera were used during the training phase to add the recovery  
+Images from both the right and the left camera were used during the training phase to add the path recovery from the edges of the road. A steering correction factor of 0.2 was used. The experimentation with 
 
 ![image4]
 
@@ -122,7 +124,26 @@ To simulate the car being at different positions of the track, we randomly trans
 
 #### Flip
 
-We randomly flipped images around the y axis to simulate driving in reverse direction. The angle was 
+We randomly flipped images around the y axis to simulate driving in reverse direction. The angle was also reversed for such images. 
+
+```python
+    mirror = np.random.randint(2)
+    if mirror == 1:
+        X = cv2.flip(X, 1)
+        y = y * - 1.0
+```
+
+#### ROI (Region of Interest)
+
+We cropped top (everything above horizon) and bottom (car hood). Few experiments showed removing top 60 and bottom 20 pixels works the best for this dataset. In future, we might want to compute the horizon and use that as input to the model. 
+
+
+### Data Generators
+
+To facilitate the generation of large number of data. 
+
+
+In addition to these augmentation, we experimented with few other techniques including image rotation and using difference image but those are still work in progress. 
 
 ####2. Attempts to reduce overfitting in the model
 
@@ -144,52 +165,3 @@ For details about how I created the training data, see the next section.
 
 ####1. Solution Design Approach
 
-The overall strategy for deriving a model architecture was to ...
-
-My first step was to use a convolution neural network model similar to the ... I thought this model might be appropriate because ...
-
-In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that my first model had a low mean squared error on the training set but a high mean squared error on the validation set. This implied that the model was overfitting. 
-
-To combat the overfitting, I modified the model so that ...
-
-Then I ... 
-
-The final step was to run the simulator to see how well the car was driving around track one. There were a few spots where the vehicle fell off the track... to improve the driving behavior in these cases, I ....
-
-At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
-
-####2. Final Model Architecture
-
-The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes ...
-
-Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
-
-![alt text][image1]
-
-####3. Creation of the Training Set & Training Process
-
-To capture good driving behavior, I first recorded two laps on track one using center lane driving. Here is an example image of center lane driving:
-
-![alt text][image2]
-
-I then recorded the vehicle recovering from the left side and right sides of the road back to center so that the vehicle would learn to .... These images show what a recovery looks like starting from ... :
-
-![alt text][image3]
-![alt text][image4]
-![alt text][image5]
-
-Then I repeated this process on track two in order to get more data points.
-
-To augment the data sat, I also flipped images and angles thinking that this would ... For example, here is an image that has then been flipped:
-
-![alt text][image6]
-![alt text][image7]
-
-Etc ....
-
-After the collection process, I had X number of data points. I then preprocessed this data by ...
-
-
-I finally randomly shuffled the data set and put Y% of the data into a validation set. 
-
-I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was Z as evidenced by ... I used an adam optimizer so that manually training the learning rate wasn't necessary.
