@@ -25,9 +25,6 @@ def gray_diff_images(data):
 
     return X, np.array(data["steering"].iloc[6:])
 
-    pass
-
-
 def brightness(X, val=0.25):
     tmp = cv2.cvtColor(X, cv2.COLOR_BGR2HSV)
     bgt = val + np.random.uniform()
@@ -68,10 +65,8 @@ def prepareTrain(X, y):
 
     X = roi(X)
 
-    # X, y = rotate(X, y, 5)
     # # Translate image to horizontal and vertical direction
     X, y = translate(X, y, 100, 40)
-
 
     # # With a random probability miror the image from left to right, 
     mirror = np.random.randint(2)

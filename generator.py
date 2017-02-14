@@ -20,23 +20,23 @@ def training_generator(data, angle_bias=1.0, batch_size=128):
             ci = np.random.randint(3)
 
             file = os.path.join(data_folder, data[camera[ci]].iloc[index].strip())
-            shift = [0.0, conf.left_offset, conf.right_offset] #shift angle for center, left, and right camera
+
+            #shift angle for center, left, and right camera
+            shift = [0.0, conf.left_offset, conf.right_offset] 
             
             image = cv2.imread(file)
 
             y = data['steering'].iloc[index] + shift[ci]
             
+            # Apply random brightness, 
             X, y = prepareTrain(image, y)
 
-            # Higher bias value will pick smaller angles. 
+            # A higher bias value will exclude smaller (< 0.1 absolute value) angles.
             threshold = np.random.uniform()
             if abs(y) < 0.1:
                 if angle_bias > threshold:
                     continue
             
-            # if abs(y) + angle_bias < threshold:
-                # continue
-
             batch_X[cnt] = X
             batch_y[cnt] = y
 
@@ -58,6 +58,7 @@ def validation_generator(data, batch_size=128):
             file = os.path.join(data_folder, data['center'].iloc[index].strip())
 
             image = cv2.imread(file)
+
             y = data['steering'].iloc[index]
 
             X = prepareTest(image)

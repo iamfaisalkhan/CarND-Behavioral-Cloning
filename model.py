@@ -1,241 +1,144 @@
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Lambda, ELU, Activation, LeakyReLU
-from keras.layers.convolutional import Convolution2D, Cropping2D
+#!/usr/bin/env python
 
+import os
+import pandas as pd
+import numpy as np
+import cv2
+
+from keras.models import load_model
+
+import argparse
+
+from cnn_models import *
+from generator import training_generator
+from generator import validation_generator
 from config import conf
 
-def model_nivida1():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.0 - 1., input_shape = (conf.row, conf.col, conf.ch)))
+if __name__ == "__main__":
 
-    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), activation="relu", border_mode="same"))
-    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), activation="relu", border_mode="same"))
-    model.add(Flatten())
-    model.add(Activation('relu'))
-    model.add(Dense(100))
-    model.add(Activation('relu'))
-    model.add(Dense(50))
-    model.add(Activation('relu'))
-    model.add(Dense(10))
-    model.add(Activation('relu'))
-    model.add(Dense(1))
+    parser = argparse.ArgumentParser(description='Behavior Clonning')
 
-    model.compile(optimizer="adam", loss="mse")
-    return model
+    parser.add_argument(
+        '--epochs',
+        dest="epochs",
+        type=int,
+        nargs='?',
+        default=10,
+        help='Number of training iterations or epochs'
+    )
+    parser.add_argument(
+        '--model',
+        dest="model",
+        type=str,
+        nargs='?',
+        default='nvidia1',
+        help='Number of training iterations or epochs'
+    )
+    parser.add_argument(
+        '--init',
+        dest="model_init",
+        type=str,
+        nargs='?',
+        default=None,
+        help='Initialize the model with weights from the file.'
+    )
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        nargs='?',
+        default=conf.batch_size,
+        help='Batch size'
+    )
+    parser.add_argument(
+        '--image_folder',
+        type=str,
+        dest='image_folder'
+        nargs='?',
+        default=conf.data_folder,
+        help='The path to the top level directory contain IMG folder. The top level directory should contain driving_log.csv file'
+    )
+    parser.add_argument(
+        '--model_dir',
+        type=str,
+        nargs='?',
+        default=conf.model_dir,
+        help='Output directory for storing the model. '
+    )
 
-def model_nivida2():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.0 - 1., input_shape = (conf.row, conf.col, conf.ch)))
+    args = parser.parse_args()
+    
+    conf.epochs = args.epochs
+    conf.data_folder = args.image_folder
+    conf.epochs = args.epochs
+    conf.model_dir = args.model_dir
+    conf.model = args.model
+    conf.samples_per_epoch = args.samples
+    conf.batch_size = args.batch_size
 
-    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(64, 3, 3, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(64, 3, 3, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(64, 3, 3, subsample=(2, 2), border_mode="same"))
-    model.add(Flatten())
-    model.add(Activation('relu'))
-    model.add(Dense(100))
-    model.add(Activation('relu'))
-    model.add(Dense(50))
-    model.add(Activation('relu'))
-    model.add(Dense(10))
-    model.add(Activation('relu'))
-    model.add(Dense(1))
+    data = pd.read_csv("%s/driving_log.csv"%conf.data_folder)
 
-    model.compile(optimizer="adam", loss="mse")
+    # Uncomment the following if you want to experiment with train/valid split. 
+    # mask = np.random.rand(data.shape[0]) < 0.9
+    # train = data[mask] 
+    # valid = data[~mask]
 
-    return model
+    # Pick model
+    if conf.model == "nvidia1":
+        model = model_nivida1()
+    elif conf.model == 'nvidia2':
+        model = model_nivida2()
+    elif conf.model == 'nvidia2b':
+        model = model_nivida2b()
+    elif conf.model == 'nvidia3':
+        model = model_nvidia3()
+    elif conf.model == 'nvidia_relu':        
+        model = model_nvidia_relu()
+    elif conf.model == 'nvidia_relu_dropout':
+        model = model_nvidia_relu_dropout()
+    elif conf.model == 'nvidia_elu':
+        model = model_nvidia_elu()
+    elif conf.model == 'comma_elu':
+        model = model_comma_elu()
+    elif conf.model == 'comma_relu':
+        model = model_comma_relu()
+    elif conf.model == 'comma_lrelu':
+        model = model_comma_lrelu()
+    else:
+        print("Model not defined")
+        exit()
+    
+    if args.model_init != None and os.path.exists(args.model_init):
+        print ("Model re-loaded from %s"%(args.model_init))
+        model = load_model(args.model_init)
 
-def model_nivida2b():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.0 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-    model.add(Convolution2D(3, 1, 1,  activation="relu", border_mode="same"))
-    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(64, 3, 3, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(64, 3, 3, subsample=(2, 2), activation="relu", border_mode="same"))
-    model.add(Convolution2D(64, 3, 3, subsample=(2, 2), border_mode="same"))
-    model.add(Flatten())
-    model.add(Activation('relu'))
-    model.add(Dense(100))
-    model.add(Activation('relu'))
-    model.add(Dense(50))
-    model.add(Activation('relu'))
-    model.add(Dense(10))
-    model.add(Activation('relu'))
-    model.add(Dense(1))
+    model.summary()
 
-    model.compile(optimizer="adam", loss="mse")
+    cnt = 0
 
-    return model
+    output_path = "%s/%s"%(conf.model_dir, conf.model)
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
 
+    val_loss = 100.0
+    for i in range(conf.epochs):
 
-def model_nvidia3():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.0 - 1., input_shape = (conf.row, conf.col, conf.ch)))
+        # Discount the bias towards smaller angles as epoch progress. 
+        bias = 1. / (cnt + 1.)
+    
+        history = model.fit_generator(
+                        training_generator(data, bias, conf.batch_size), 
+                        samples_per_epoch=conf.samples_per_epoch, 
+                        validation_data=validation_generator(data, conf.batch_size),
+                        nb_val_samples=1000,
+                        nb_epoch=1)
 
-    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), init='he_normal', border_mode="valid"))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), init='he_normal',  border_mode="valid"))
-    model.add(Activation('relu'))
-    model.add(Flatten())
-    model.add(Activation('relu'))
-    model.add(Dense(100, init='he_normal'))
-    model.add(Activation('relu'))
-    model.add(Dense(50, init='he_normal'))
-    model.add(Activation('relu'))
-    model.add(Dense(10, init='he_normal'))
-    model.add(Activation('relu'))
-    model.add(Dense(1))
+        # Keep track of best mse loss value. 
+        if (history.history['val_loss'][0] < val_loss):
+            val_loss = history.history['val_loss'][0]
+    
+        model_name = "%d_%s_%.4f.h5"%((cnt+1), conf.model, history.history['val_loss'][0])
+        model.save("%s/%s"%(output_path, model_name))
 
-    model.compile(optimizer="adam", loss="mse")
+        cnt +=1
 
-    return model
-
-def model_nvidia_elu():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.5 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-
-    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(ELU())
-    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(ELU())
-    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(ELU())
-    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), init='he_normal', border_mode="valid"))
-    model.add(ELU())
-    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), init='he_normal',  border_mode="valid"))
-    model.add(ELU())
-    model.add(Flatten())
-    model.add(ELU())
-    model.add(Dense(100, init='he_normal'))
-    model.add(ELU())
-    model.add(Dense(50, init='he_normal'))
-    model.add(Activation('elu'))
-    model.add(Dense(10, init='he_normal'))
-    model.add(Activation('elu'))
-    model.add(Dense(1))
-
-    model.compile(optimizer="adam", loss="mse")
-
-    return model
-
-
-def model_nvidia_relu():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.5 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-
-    model.add(Convolution2D(24, 5, 5, activation='relu', subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Convolution2D(36, 5, 5, activation='relu',  subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Convolution2D(48, 5, 5, activation='relu', subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), init='he_normal', border_mode="valid"))
-    model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), init='he_normal',  border_mode="valid"))
-    model.add(Flatten())
-    model.add(Activation('relu'))
-    model.add(Dense(100, init='he_normal'))
-    model.add(Activation('relu'))
-    model.add(Dense(50, init='he_normal'))
-    model.add(Activation('relu'))
-    model.add(Dense(10, init='he_normal'))
-    model.add(Activation('relu'))
-    model.add(Dense(1))
-
-    model.compile(optimizer="adam", loss="mse")
-
-    return model
-
-def model_nvidia_relu_dropout():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.5 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-
-    model.add(Convolution2D(24, 5, 5, activation='relu', subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Convolution2D(36, 5, 5, activation='relu',  subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Convolution2D(48, 5, 5, activation='relu', subsample=(2, 2), init='he_normal', border_mode="valid"))
-    model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), init='he_normal', border_mode="valid"))
-    model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), init='he_normal',  border_mode="valid"))
-    model.add(Flatten())
-    model.add(Dropout(0.5))
-    model.add(Activation('relu'))
-    model.add(Dense(100, init='he_normal'))
-    model.add(Dropout(0.2))
-    model.add(Activation('relu'))
-    model.add(Dense(50, init='he_normal'))
-    model.add(Dropout(0.2))
-    model.add(Activation('relu'))
-    model.add(Dense(10, init='he_normal'))
-    model.add(Activation('relu'))
-    model.add(Dense(1))
-
-    model.compile(optimizer="adam", loss="mse")
-
-    return model
-
-
-def model_comma_elu():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.0 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-
-    model.add(Convolution2D(16, 8, 8, subsample=(4, 4), border_mode="same"))
-    model.add(ELU())
-    model.add(Convolution2D(32, 5, 5, subsample=(2, 2), border_mode="same"))
-    model.add(ELU())
-    model.add(Convolution2D(64, 5, 5, subsample=(2, 2), border_mode="same"))
-    model.add(Flatten())
-    model.add(ELU())
-    model.add(Dense(512))
-    model.add(ELU())
-    model.add(Dense(1))
-
-    model.compile(optimizer="adam", loss="mse")
-
-    return model
-
-def model_comma_relu():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.0 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-
-    model.add(Convolution2D(16, 8, 8, subsample=(4, 4), border_mode="same"))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(32, 5, 5, subsample=(2, 2), border_mode="same"))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(64, 5, 5, subsample=(2, 2), border_mode="same"))
-    model.add(Flatten())
-    model.add(Activation('relu'))
-    model.add(Dense(512))
-    model.add(Activation('relu'))
-    model.add(Dense(1))
-
-    model.compile(optimizer="adam", loss="mse")
-    return model
-
-def model_comma_lrelu():
-    model = Sequential()
-    model.add(Lambda(lambda x: x/127.0 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-
-    model.add(Convolution2D(16, 8, 8, subsample=(4, 4), border_mode="same"))
-    model.add(LeakyReLU())
-    model.add(Convolution2D(32, 5, 5, subsample=(2, 2), border_mode="same"))
-    model.add(LeakyReLU())
-    model.add(Convolution2D(64, 5, 5, subsample=(2, 2), border_mode="same"))
-    model.add(Flatten())
-    #model.add(Dropout(.5))
-    model.add(LeakyReLU())
-    model.add(Dense(512))
-    #model.add(Dropout(.5))
-    model.add(LeakyReLU())
-    model.add(Dense(1))
-
-    model.compile(optimizer="adam", loss="mse")
-    return model
-
+    print("Best loss %.4f"%val_loss)

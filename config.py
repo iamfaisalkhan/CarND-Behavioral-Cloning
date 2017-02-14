@@ -12,7 +12,7 @@ class Config:
     roi = ( (60, 140), (0, 320))
 
     data_folder = "./data"
-    model_dir = "/data/CarND-Behavioral-Cloning/"
+    model_dir = "./steering_angle/"
 
     model = "nvidia_original"
 
