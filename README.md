@@ -16,10 +16,10 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./resources/sample_images.svg "random sample of images with varying angles"
+[image1]: ./resources/sample_images.png "random sample of images with varying angles"
 [image2]: ./resources/angle_distribution.png "Steering ngle distribution"
-[image3]: ./resources/translate_example.svg "Recovery Image"
-[image4]: ./resources/left_right_camera.svg "Recovery Image"
+[image3]: ./resources/translate_example.png "Recovery Image"
+[image4]: ./resources/left_right_camera.png "Recovery Image"
 [image5]: ./examples/placeholder_small.png "Recovery Image"
 [image6]: ./examples/placeholder_small.png "Normal Image"
 [image7]: ./examples/placeholder_small.png "Flipped Image"
