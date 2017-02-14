@@ -16,10 +16,10 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/placeholder.png "Model Visualization"
-[image2]: ./examples/placeholder.png "Grayscaling"
-[image3]: ./examples/placeholder_small.png "Recovery Image"
-[image4]: ./examples/placeholder_small.png "Recovery Image"
+[image1]: ./resources/sample_images.svg "random sample of images with varying angles"
+[image2]: ./resources/angle_distribution.svg "Steering ngle distribution"
+[image3]: ./resources/translate_example.svg "Recovery Image"
+[image4]: ./resources/left_right_camera.svg "Recovery Image"
 [image5]: ./examples/placeholder_small.png "Recovery Image"
 [image6]: ./examples/placeholder_small.png "Normal Image"
 [image7]: ./examples/placeholder_small.png "Flipped Image"
@@ -56,25 +56,25 @@ We experimented with multiple models. Take a look at the cnn_models.py for a det
 Our final model is based on the Nvidia's End-to-End learning model. The original model doesn't use any regularization. However, we noticed that adding the dropout on these models can help to generalize the driving behavior between the different (but similar) simulated tracks even on the track not seen by the model before. 
 
 ```python
-model = Sequential()
-model.add(Lambda(lambda x: x/127.5 - 1., input_shape = (conf.row, conf.col, conf.ch)))
-
-model.add(Convolution2D(24, 5, 5, activation='relu', subsample=(2, 2), init='he_normal', border_mode="valid"))
-model.add(Convolution2D(36, 5, 5, activation='relu',  subsample=(2, 2), init='he_normal', border_mode="valid"))
-model.add(Convolution2D(48, 5, 5, activation='relu', subsample=(2, 2), init='he_normal', border_mode="valid"))
-model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), init='he_normal', border_mode="valid"))
-model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), init='he_normal',  border_mode="valid"))
-model.add(Flatten())
-model.add(Activation('relu'))
-model.add(Dense(100, init='he_normal'))
-model.add(Activation('relu'))
-model.add(Dense(50, init='he_normal'))
-model.add(Activation('relu'))
-model.add(Dense(10, init='he_normal'))
-model.add(Activation('relu'))
-model.add(Dense(1))
-
-model.compile(optimizer="adam", loss="mse")
+     1	model = Sequential()
+     2	model.add(Lambda(lambda x: x/127.5 - 1., input_shape = (conf.row, conf.col, conf.ch)))
+      	
+     3	model.add(Convolution2D(24, 5, 5, activation='relu', subsample=(2, 2), border_mode="valid"))
+     4	model.add(Convolution2D(36, 5, 5, activation='relu', subsample=(2, 2), border_mode="valid"))
+     5	model.add(Convolution2D(48, 5, 5, activation='relu', subsample=(2, 2), border_mode="valid"))
+     6	model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), border_mode="valid"))
+     7	model.add(Convolution2D(64, 3, 3, activation='relu', subsample=(1, 1), border_mode="valid"))
+     8	model.add(Flatten())
+     9	model.add(Activation('relu'))
+    10	model.add(Dense(100, init='he_normal'))
+    11	model.add(Activation('relu'))
+    12	model.add(Dense(50, init='he_normal'))
+    13	model.add(Activation('relu'))
+    14	model.add(Dense(10, init='he_normal'))
+    15	model.add(Activation('relu'))
+    16	model.add(Dense(1))
+      	
+    17	model.compile(optimizer="adam", loss="mse")
 ```
 
 We followed the convolution neural network My model consists of a convolution neural network with 3x3 filter sizes and depths between 32 and 128 (model.py lines 18-24) 
@@ -82,17 +82,47 @@ We followed the convolution neural network My model consists of a convolution ne
 The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
 
 
-###. Training
+## Training
 
-The model was trained using the Udacity's dataset. The dataset contains about 8K immages each from 3 camera positions (left, center, and right). The left and right camera images are useful for correcting the wandering off behavior of the simulated car. 
+### Input Data
 
-TODO: Sample Images
-TODO: a sample of 
+The model was trained using the Udacity's dataset. The dataset contains about 8K immages each of 3 camera positions (left, center, and right). The left and right camera images are useful for correcting the steering angle in case the car wanders off to the road edges. 
 
-###. Augmentation
+Here is a random sample of images at different steering angle. 
 
-Given the limited amount of the data from
+![alt text][image1]
 
+To further investigate the data, we also look at the distribution of steering angle (see figure below) andand quickly found out that the data is heavily unblanced towarded the zero steering angle. This was completely expected as our simulated car will be driving striaght. We handled this by using python **generator** that randomly picks images by first selecting images with only non-zero steering angles but later introducing zero-based steering angle in the sampled images. The threshold for rejecting most of the zero-angled images is adjusted at the beginning of each iteration. 
+
+![alt text][image2]
+
+### Augmentation
+
+To handle the limited dataset, data augmentation techniques were used to generate extra training examples that suits betst  augment it to generate extra training example and to allow our algorithm to learn a more general model from the limited We used data augmentation to generate extra training data to allow our model to handle variety of situations 
+
+#### Left and Right Camera
+
+Images from both the right and the left camera were used during the training phase to add the recovery  
+
+![image4]
+
+#### Random Brightness
+
+A random factor of brightness was added to each image using the HSV colorspace. This can potentially allow us to generalize beyond the seen data and handle shadows in the tracks. 
+
+```python
+brightness = 0.25 + np.random.uniform()
+img[:, :, 2] = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:, :, 2] * brightness
+```
+#### Translation 
+
+To simulate the car being at different positions of the track, we randomly translate images in the X and y direction along with the appropriate angle adjustment. Here is an example showing original and translated image from our sample data. 
+
+![image3]
+
+#### Flip
+
+We randomly flipped images around the y axis to simulate driving in reverse direction. The angle was 
 
 ####2. Attempts to reduce overfitting in the model
 
